@@ -1,0 +1,18 @@
+{
+  "name": "monster",
+  "description": "Flying Spaghetti/Finite State Machine",
+  "version": "0.1.0",
+  "keywords": [ "" ],
+  "maintainers": [
+    { "name": "James Socol", "web": "http://coffeeonthekeyboard.com", "email": "james@mozilla.com" }
+  ],
+  "contributors": [
+    { "name": "James Socol", "web": "http://coffeeonthekeyboard.com", "email": "james@mozilla.com" }
+  ],
+  "licenses": [ "MIT" ],
+  "repositories": {
+    "type": "git",
+    "url": "http://github.com/jsocol/monster.git"
+  },
+  dependencies: {}
+}
