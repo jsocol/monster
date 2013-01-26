@@ -1,6 +1,6 @@
 {
   "name": "monster",
-  "description": "Flying Spaghetti/Finite State Machine",
+  "description": "Flying Spaghetti Machine/Finite State Monster",
   "version": "0.1.0",
   "keywords": [ "" ],
   "maintainers": [
@@ -14,5 +14,6 @@
     "type": "git",
     "url": "http://github.com/jsocol/monster.git"
   },
-  dependencies: {}
+  "main": "monster.js",
+  "dependencies": {}
 }
