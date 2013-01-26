@@ -79,6 +79,7 @@ Monster.prototype.transition = function mTransition(name) {
     if (this.isFinal()) {
         this.emit('final');
     }
+    return this;
 };
 
 Monster.prototype.addTransition = function addTransition(trans) {
@@ -89,8 +90,9 @@ Monster.prototype.addTransition = function addTransition(trans) {
         this._states[from][trans.name] = trans.to;
     }
     this[trans.name] = function() {
-        self.transition(trans.name);
+        return self.transition(trans.name);
     };
+    return this;
 };
 
 exports.State = State;
