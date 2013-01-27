@@ -151,3 +151,4 @@ Similarly, opening an already open connection:
 
 * AMD, require.js, or another way to use Monster in a browser would be nice.
 * Some sort of test suite.
+* Make it possible to emit custom data with transitions.
