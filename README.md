@@ -113,10 +113,12 @@ any other state, Monster raises `monster.InvalidTransition`:
 
 ### Events
 
+#### `Monster`
+
 `Monster` objects emit several events. A few are common to all Monsters:
 
 * `transition`, when any transition occurs, with two arguments, the old state
-  and the new state.
+  and the new state. It does not get the arguments of the transiton.
 * `final`, when the Monster enters a final state (i.e. there are no valid
   transitions from the new state).
 
@@ -126,6 +128,64 @@ Additionally, Monster emits events for each transition:
     nest.on('build', function() {
         console.log('The nest is built!');
     });
+
+You may also pass arbitrary arguments to a transition:
+
+    nest.on('build', function(where, by) {
+        console.log('The nest was built', where, 'by', by);
+    });
+    nest.build('in the tree', 'a robin');
+
+
+#### `Transition`
+
+`Transition` objects emit one event:
+
+* `transition`, when the transition occurs, with two arguments, the old state
+  and the new state, followed by any arguments to the transition itself.
+
+For example:
+
+    var build = new monster.Transition('build', null, built);
+    build.on('transition', function(from, to) {
+        console.log('went from', from, 'to', to);
+        console.log(arguments);
+    });
+    nest.addTransition(build);
+
+    nest.build('job\'s done');
+
+
+#### `State`
+
+`State` objects emit two events:
+
+* `enter`, when entering the state. This gets any arguments passed to the
+  transition (the initial state will emit an `enter` event with any additional
+  arguments passed to the `Monster` constructor).
+* `leave`, when leaving the state.
+
+For example:
+
+    var empty = new monster.State('empty');
+    built.on('enter', function(by) {
+        console.log('emptied by', by);
+    });
+    built.on('leave', function() {
+        console.log('not empty anymore');
+    });
+    var basket = new monster.Monster(empty, 'the wind');
+
+    var full = new monster.State('full');
+    full.on('enter', function(by) {
+        console.log('filled by', by);
+    });
+    var fill = new monster.Transition('fill', empty, full);
+    basket.addTransition(fill);
+
+    basket.fill('Steve the Pirate');
+    // Or...
+    basket.transition('fill', 'Steve the Pirate');
 
 
 ### Exceptions
@@ -147,11 +207,120 @@ Similarly, opening an already open connection:
     conn.open();  // throw InvalidTransition
 
 
+## Advanced Example
+
+> I do not endorse this as a good way to build a game, it's just an instructive
+> example.
+
+There are some interesting tricks you can use, such as using the same names for
+several transitions, to implement fairly complex machinery. For example, a very
+simple game unit might look like this:
+
+    var healthFull = new monster.State('healthFull'),
+        health70 = new monster.State('health70'),
+        health50 = new monster.State('health50'),
+        health30 = new monster.State('health30'),
+        dead = new monster.State('dead');
+    var unit = new monster.Monster(healthFull);
+
+    unit.addTransition(new monster.Transition('damage', healthFull, health70));
+    unit.addTransition(new monster.Transition('damage', health70, health50));
+    unit.addTransition(new monster.Transition('damage', health50, health30));
+    unit.addTransition(new monster.Transition('damage', health30, dead));
+
+    unit.addTransition(new monster.Transition('heal', health30, health50));
+    unit.addTransition(new monster.Transition('heal', health50, health70));
+    unit.addTransition(new monster.Transition('heal', health70, healthFull));
+
+    // Heal over time.
+    setInterval(function() {
+        if (unit.state !== healthFull && unit.state !== dead) {
+            unit.heal();
+        }
+    }, 30000);
+
+    unit.damage();  // unit.state === health70
+    unit.damage();  // unit.state === health50
+    unit.heal();  // unit.state === health70
+
+
+You could also be more fine-grainedby expanding a `Monster` object. This also
+demonstrates that state names are optional, if you don't like the redundancy.
+
+    // Assume we have a Sprite() class.
+
+    var full_health = new Sprite('unit_full_health.png'),
+        bleeding = new Sprite('unit_bleeding.png'),
+        dying = new Sprite('unit_dying.png'),
+        died = new Sprite('unit_dead.png');
+
+    var alive = new State(),
+        dead = new State();
+
+    var unit = new Monster(alive);
+    unit.maxHealth = unit.health = 100;
+    unit.sprite = full_health;
+
+    unit.addTransition(new Transition('damage', alive, alive));
+    unit.addTransition(new Transition('heal', alive, alive));
+    unit.addTransition(new Transition('die', alive, dead));
+
+    unit.on('damage', function(amt) {
+        this.health -= (amt || 1);
+        if (this.health <= 0) {
+            this.die();
+        }
+        else if (this.health < 50) {
+            this.sprite = dying;
+        }
+        else {
+            this.sprite = bleeding;
+        }
+    });
+
+    unit.on('heal', function(amt) {
+        if (this.health < this.maxHealth) {
+            this.health += (amt || 1);
+        }
+        else {
+            this.health = this.maxHealth;
+        }
+
+        if (this.health < 50) {
+            this.sprite = dying;
+        }
+        else if (this.health < this.maxHealth) {
+            this.sprite = bleeding;
+        }
+        else {
+            this.sprite = full_health;
+        }
+    });
+
+    unit.on('die', function() {
+        this.sprite = died;
+    });
+
+    // During the game:
+    unit.damage(10);
+    unit.damage(14);
+    unit.health;  // 76
+    unit.sprite;  // bleeding
+    unit.damage(50);
+    unit.sprite;  // dying
+    unit.heal(70);
+    unit.sprite;  // bleeding
+    unit.heal(30);
+    unit.sprite;  // full_health
+    unit.damage(300);
+    unit.state;  // dead
+    unit.isFinal();  // true
+
+
 ## TODO
 
 * AMD, require.js, or another way to use Monster in a browser would be nice.
 * Some sort of test suite.
-* Make it possible to emit custom data with transitions.
 
 
 ## License
